@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/features/home/presentation/home_shell_page.dart';
 import 'package:flutter_application_1/core/graphql/graphql_client.dart';
-import 'package:flutter_application_1/pages/home_page.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 void main() {
@@ -33,9 +33,10 @@ class _MyAppState extends State<MyApp> {
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          colorSchemeSeed: const Color(0xFF1E88E5),
+          scaffoldBackgroundColor: const Color.fromARGB(255, 238, 255, 191),
+          colorSchemeSeed: const Color.fromARGB(255, 27, 106, 175),
         ),
-        home: const HomePage(),
+        home: const HomeShellPage(),
       ),
     );
   }

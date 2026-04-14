@@ -9,7 +9,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  flutter_onboarding_slider: ^1.0.11
   graphql_flutter: ^5.1.2
 
 dev_dependencies:

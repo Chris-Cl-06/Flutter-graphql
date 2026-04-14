@@ -3,7 +3,7 @@ import 'package:flutter_application_1/core/constants/api_constants.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 ValueNotifier<GraphQLClient> buildGraphqlClientNotifier() {
-  final HttpLink httpLink = HttpLink(ApiConstants.countriesGraphqlEndpoint);
+  final HttpLink httpLink = HttpLink(ApiConstants.tasksGraphqlEndpoint);
 
   return ValueNotifier<GraphQLClient>(
     GraphQLClient(link: httpLink, cache: GraphQLCache()),
