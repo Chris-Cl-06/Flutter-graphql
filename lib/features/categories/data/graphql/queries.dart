@@ -1,6 +1,6 @@
 const String getCategoriesQuery = r'''
-  query GetCategories {
-    categories {
+  query GetCategories($offset: Int, $limit: Int) {
+    categories(offset: $offset, limit: $limit) {
       items {
         id
         name

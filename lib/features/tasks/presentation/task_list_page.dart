@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/core/widgets/app_gradient_background.dart';
 import 'package:flutter_application_1/features/tasks/data/graphql/mutations.dart';
 import 'package:flutter_application_1/features/tasks/data/graphql/queries.dart';
 import 'package:flutter_application_1/features/tasks/data/models/task.dart';
@@ -107,133 +108,160 @@ class _TaskListPageState extends State<TaskListPage> {
         final hasNextPage = (pageInfo?['hasNextPage'] as bool?) ?? false;
         final hasPreviousPage =
             (pageInfo?['hasPreviousPage'] as bool?) ?? false;
-        final int safeLimit = (_limit != null && _limit! > 0) ? _limit! : 1;
-        final int safeOffset = _offset ?? 0;
-
-        final totalPages = ((totalCount + safeLimit - 1) ~/ safeLimit)
-            .clamp(1, double.infinity)
-            .toInt();
-
-        final currentPage = (safeOffset ~/ safeLimit) + 1;
+        final totalPages = ((totalCount + _limit - 1) ~/ _limit).clamp(
+          1,
+          999999,
+        );
+        final currentPage = (_offset ~/ _limit) + 1;
 
         final tasks = rawTasks
             .map((item) => Task.fromJson(item as Map<String, dynamic>))
             .toList();
 
         return Scaffold(
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: const Text('Tasks'),
+            title: const Text('Tareas'),
             centerTitle: true,
             actions: [
               if (pageInfo != null)
                 IconButton(
                   icon: const Icon(Icons.info_outline),
-                  tooltip: 'Page info',
+                  tooltip: 'Info de pagina',
                   onPressed: () => _showInfoDialog(context, pageInfo),
                 ),
             ],
           ),
-          body: Builder(
-            builder: (ctx) {
-              if (result.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (result.hasException) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Error loading tasks:\n${result.exception}',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                );
-              }
-              if (tasks.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('No tasks yet'),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () => _openCreateTaskPage(refetch),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Create a new task'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return CustomScrollView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                slivers: [
-                  SliverToBoxAdapter(
+          body: AppGradientBackground(
+            child: Builder(
+              builder: (ctx) {
+                if (result.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (result.hasException) {
+                  return Center(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: FilledButton.icon(
-                        onPressed: () => _openCreateTaskPage(refetch),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Create a new task'),
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Error loading tasks:\n${result.exception}',
+                        textAlign: TextAlign.center,
                       ),
                     ),
+                  );
+                }
+                if (tasks.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Todavia no hay tareas'),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: () => _openCreateTaskPage(refetch),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Crear nueva tarea'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  SliverList.separated(
-                    itemCount: tasks.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 0),
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return _TaskCard(
-                        task: task,
-                        index: _offset + index,
-                        onDelete: () => _deleteTask(task.id, refetch),
-                      );
-                    },
-                  ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          IconButton.outlined(
-                            icon: const Icon(Icons.chevron_left),
-                            tooltip: 'Previous page',
-                            onPressed: hasPreviousPage
-                                ? () => setState(
-                                    () => _offset = (_offset - _limit).clamp(
-                                      0,
-                                      _offset,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            '$currentPage / $totalPages',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                          const SizedBox(width: 16),
-                          IconButton.outlined(
-                            icon: const Icon(Icons.chevron_right),
-                            tooltip: 'Next page',
-                            onPressed: hasNextPage
-                                ? () => setState(() => _offset += _limit)
-                                : null,
-                          ),
-                        ],
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: FilledButton.icon(
+                          onPressed: () => _openCreateTaskPage(refetch),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Crear nueva tarea'),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.insights_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Mostrando ${tasks.length} de $totalCount tareas',
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverList.separated(
+                      itemCount: tasks.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 0),
+                      itemBuilder: (context, index) {
+                        final task = tasks[index];
+                        return _TaskCard(
+                          task: task,
+                          index: _offset + index,
+                          onDelete: () => _deleteTask(task.id, refetch),
+                        );
+                      },
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton.outlined(
+                              icon: const Icon(Icons.chevron_left),
+                              tooltip: 'Pagina anterior',
+                              onPressed: hasPreviousPage
+                                  ? () => setState(
+                                      () => _offset = (_offset - _limit).clamp(
+                                        0,
+                                        _offset,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              '$currentPage / $totalPages',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            const SizedBox(width: 16),
+                            IconButton.outlined(
+                              icon: const Icon(Icons.chevron_right),
+                              tooltip: 'Pagina siguiente',
+                              onPressed: hasNextPage
+                                  ? () => setState(() => _offset += _limit)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         );
       },

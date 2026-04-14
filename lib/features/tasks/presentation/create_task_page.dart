@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/core/widgets/app_gradient_background.dart';
 import 'package:flutter_application_1/features/categories/data/graphql/queries.dart';
 import 'package:flutter_application_1/features/categories/data/models/category.dart';
 import 'package:flutter_application_1/features/tasks/data/graphql/mutations.dart';
@@ -65,112 +66,152 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Task'), centerTitle: true),
-      body: Query(
-        options: QueryOptions(
-          document: gql(getCategoriesQuery),
-          fetchPolicy: FetchPolicy.networkOnly,
-        ),
-        builder: (result, {fetchMore, refetch}) {
-          if (result.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(title: const Text('Nueva tarea'), centerTitle: true),
+      body: AppGradientBackground(
+        child: Query(
+          options: QueryOptions(
+            document: gql(getCategoriesQuery),
+            variables: {'offset': 0, 'limit': 100},
+            fetchPolicy: FetchPolicy.networkOnly,
+          ),
+          builder: (result, {fetchMore, refetch}) {
+            if (result.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (result.hasException) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Error loading categories:\n${result.exception}',
-                  textAlign: TextAlign.center,
+            if (result.hasException) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Error cargando categorias:\n${result.exception}',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          final categoriesResponse =
-              result.data?['categories'] as Map<String, dynamic>?;
-          final rawCategories = (categoriesResponse?['items'] as List?) ?? [];
-          final categories = rawCategories
-              .map((item) => Category.fromJson(item as Map<String, dynamic>))
-              .where((category) => category.isActive)
-              .toList();
+            final categoriesResponse =
+                result.data?['categories'] as Map<String, dynamic>?;
+            final rawCategories = (categoriesResponse?['items'] as List?) ?? [];
+            final categories = rawCategories
+                .map((item) => Category.fromJson(item as Map<String, dynamic>))
+                .where((category) => category.isActive)
+                .toList();
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: ListView(
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Title',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Title is required';
-                      }
-                      return null;
-                    },
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedCategoryId,
-                    decoration: const InputDecoration(
-                      labelText: 'Category',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: '',
-                        child: Text('No category'),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.rocket_launch_rounded,
+                        color: colorScheme.primary,
                       ),
-                      ...categories.map(
-                        (category) => DropdownMenuItem<String>(
-                          value: category.id,
-                          child: Text('${category.name} (${category.id})'),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Crea una tarea clara y accionable',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),
                     ],
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategoryId = value == null || value.isEmpty
-                            ? null
-                            : value;
-                      });
-                    },
                   ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: _saving ? null : _submit,
-                    child: _saving
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          TextFormField(
+                            controller: _titleController,
+                            decoration: const InputDecoration(
+                              labelText: 'Titulo',
                             ),
-                          )
-                        : const Text('Create task'),
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'El titulo es obligatorio';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            controller: _descriptionController,
+                            decoration: const InputDecoration(
+                              labelText: 'Descripcion',
+                            ),
+                            maxLines: 4,
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            initialValue: _selectedCategoryId,
+                            decoration: const InputDecoration(
+                              labelText: 'Categoria',
+                            ),
+                            items: [
+                              const DropdownMenuItem<String>(
+                                value: '',
+                                child: Text('Sin categoria'),
+                              ),
+                              ...categories.map(
+                                (category) => DropdownMenuItem<String>(
+                                  value: category.id,
+                                  child: Text(category.name),
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCategoryId =
+                                    value == null || value.isEmpty
+                                    ? null
+                                    : value;
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              onPressed: _saving ? null : _submit,
+                              icon: _saving
+                                  ? const SizedBox(
+                                      height: 16,
+                                      width: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.check_circle_outline),
+                              label: Text(
+                                _saving ? 'Guardando...' : 'Crear tarea',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
-          );
-        },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }

@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/core/widgets/app_gradient_background.dart';
 import 'package:flutter_application_1/features/categories/data/graphql/queries.dart';
 import 'package:flutter_application_1/features/categories/data/models/category.dart';
 import 'package:flutter_application_1/features/categories/presentation/create_category_page.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
-class CategoryListPage extends StatelessWidget {
+class CategoryListPage extends StatefulWidget {
   const CategoryListPage({super.key});
+
+  @override
+  State<CategoryListPage> createState() => _CategoryListPageState();
+}
+
+class _CategoryListPageState extends State<CategoryListPage> {
+  static const int _limit = 8;
+  int _offset = 0;
 
   Future<void> _openCreateCategoryPage(
     BuildContext context,
@@ -14,23 +23,28 @@ class CategoryListPage extends StatelessWidget {
     final created = await Navigator.of(
       context,
     ).push<bool>(MaterialPageRoute(builder: (_) => const CreateCategoryPage()));
-    if (created == true) refetch?.call();
+    if (created == true) {
+      refetch?.call();
+    }
   }
 
   void _showInfoDialog(BuildContext context, Map<String, dynamic> pageInfo) {
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Page info'),
+        title: const Text('Info de pagina'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _InfoRow('Total categories', '${pageInfo['totalCount']}'),
+            _InfoRow('Total categorias', '${pageInfo['totalCount']}'),
             _InfoRow('Offset', '${pageInfo['offset'] ?? 0}'),
             _InfoRow('Limit', '${pageInfo['limit'] ?? '-'}'),
-            _InfoRow('Has next page', '${pageInfo['hasNextPage'] ?? false}'),
             _InfoRow(
-              'Has previous page',
+              'Tiene siguiente pagina',
+              '${pageInfo['hasNextPage'] ?? false}',
+            ),
+            _InfoRow(
+              'Tiene pagina anterior',
               '${pageInfo['hasPreviousPage'] ?? false}',
             ),
           ],
@@ -38,7 +52,7 @@ class CategoryListPage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
+            child: const Text('Cerrar'),
           ),
         ],
       ),
@@ -50,6 +64,7 @@ class CategoryListPage extends StatelessWidget {
     return Query(
       options: QueryOptions(
         document: gql(getCategoriesQuery),
+        variables: {'offset': _offset, 'limit': _limit},
         fetchPolicy: FetchPolicy.networkOnly,
       ),
       builder: (result, {fetchMore, refetch}) {
@@ -58,86 +73,165 @@ class CategoryListPage extends StatelessWidget {
         final rawCategories = (categoriesResponse?['items'] as List?) ?? [];
         final pageInfo =
             categoriesResponse?['pageInfo'] as Map<String, dynamic>?;
+        final totalCount = (pageInfo?['totalCount'] as num?)?.toInt() ?? 0;
+        final hasNextPage = (pageInfo?['hasNextPage'] as bool?) ?? false;
+        final hasPreviousPage =
+            (pageInfo?['hasPreviousPage'] as bool?) ?? false;
+        final totalPages = ((totalCount + _limit - 1) ~/ _limit).clamp(
+          1,
+          999999,
+        );
+        final currentPage = (_offset ~/ _limit) + 1;
+
         final categories = rawCategories
             .map((item) => Category.fromJson(item as Map<String, dynamic>))
             .toList();
 
         return Scaffold(
+          backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: const Text('Categories'),
+            title: const Text('Categorias'),
             centerTitle: true,
             actions: [
               if (pageInfo != null)
                 IconButton(
                   icon: const Icon(Icons.info_outline),
-                  tooltip: 'Page info',
+                  tooltip: 'Info de pagina',
                   onPressed: () => _showInfoDialog(context, pageInfo),
                 ),
             ],
           ),
-          body: Builder(
-            builder: (ctx) {
-              if (result.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (result.hasException) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      'Error loading categories:\n${result.exception}',
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                );
-              }
-              if (categories.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('No categories yet'),
-                      const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: () =>
-                            _openCreateCategoryPage(context, refetch),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Create a new category'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-              return CustomScrollView(
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                slivers: [
-                  SliverToBoxAdapter(
+          body: AppGradientBackground(
+            child: Builder(
+              builder: (ctx) {
+                if (result.isLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (result.hasException) {
+                  return Center(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: FilledButton.icon(
-                        onPressed: () =>
-                            _openCreateCategoryPage(context, refetch),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Create a new category'),
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Error cargando categorias:\n${result.exception}',
+                        textAlign: TextAlign.center,
                       ),
                     ),
+                  );
+                }
+                if (categories.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Todavia no hay categorias'),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: () =>
+                              _openCreateCategoryPage(context, refetch),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Crear nueva categoria'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    sliver: SliverList.separated(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        child: FilledButton.icon(
+                          onPressed: () =>
+                              _openCreateCategoryPage(context, refetch),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Crear nueva categoria'),
+                        ),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.auto_awesome_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Mostrando ${categories.length} de $totalCount categorias',
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverList.separated(
                       itemCount: categories.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 0),
                       itemBuilder: (context, index) {
-                        return _CategoryCard(category: categories[index]);
+                        return _CategoryCard(
+                          category: categories[index],
+                          index: _offset + index,
+                        );
                       },
                     ),
-                  ),
-                ],
-              );
-            },
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            IconButton.outlined(
+                              icon: const Icon(Icons.chevron_left),
+                              tooltip: 'Pagina anterior',
+                              onPressed: hasPreviousPage
+                                  ? () => setState(
+                                      () => _offset = (_offset - _limit).clamp(
+                                        0,
+                                        _offset,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(width: 16),
+                            Text(
+                              '$currentPage / $totalPages',
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            const SizedBox(width: 16),
+                            IconButton.outlined(
+                              icon: const Icon(Icons.chevron_right),
+                              tooltip: 'Pagina siguiente',
+                              onPressed: hasNextPage
+                                  ? () => setState(() => _offset += _limit)
+                                  : null,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         );
       },
@@ -147,24 +241,30 @@ class CategoryListPage extends StatelessWidget {
 
 class _CategoryCard extends StatelessWidget {
   final Category category;
+  final int index;
 
-  const _CategoryCard({required this.category});
+  const _CategoryCard({required this.category, required this.index});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.circle,
-                  size: 10,
-                  color: category.isActive ? Colors.green : Colors.grey,
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: category.isActive
+                        ? const Color(0xFF10B981)
+                        : Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -176,8 +276,15 @@ class _CategoryCard extends StatelessWidget {
               ],
             ),
             const Divider(height: 16),
-            Text('ID: ${category.id}'),
-            Text('Active: ${category.isActive}'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(label: Text('Indice #${index + 1}')),
+                Chip(label: Text('ID ${category.id}')),
+                Chip(label: Text(category.isActive ? 'Activa' : 'Inactiva')),
+              ],
+            ),
           ],
         ),
       ),

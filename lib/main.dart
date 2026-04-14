@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/features/home/presentation/home_shell_page.dart';
 import 'package:flutter_application_1/core/graphql/graphql_client.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,26 +16,82 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  // Declaramos la variable del cliente
   late ValueNotifier<GraphQLClient> client;
 
   @override
   void initState() {
     super.initState();
-    // Inicializamos el cliente una sola vez al iniciar la app
     client = buildGraphqlClientNotifier();
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: const Color(0xFF0F766E),
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: const Color(0xFF0F766E),
+          secondary: const Color(0xFFF59E0B),
+          surface: const Color(0xFFF6F8FC),
+        );
+
     return GraphQLProvider(
       client: client,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
-          scaffoldBackgroundColor: const Color.fromARGB(255, 238, 255, 191),
-          colorSchemeSeed: const Color.fromARGB(255, 27, 106, 175),
+          colorScheme: colorScheme,
+          scaffoldBackgroundColor: const Color(0xFFF2F5FB),
+          textTheme: GoogleFonts.manropeTextTheme(),
+          appBarTheme: const AppBarTheme(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            centerTitle: true,
+          ),
+          cardTheme: CardThemeData(
+            color: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: colorScheme.outlineVariant),
+            ),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: colorScheme.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+            ),
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: Colors.white,
+            indicatorColor: colorScheme.primary.withValues(alpha: 0.14),
+            elevation: 0,
+            height: 72,
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              final isSelected = states.contains(WidgetState.selected);
+              return TextStyle(
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? colorScheme.primary : colorScheme.outline,
+              );
+            }),
+          ),
         ),
         home: const HomeShellPage(),
       ),
