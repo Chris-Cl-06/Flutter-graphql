@@ -13,6 +13,9 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
+  static const int _limit = 5;
+  int _offset = 0;
+
   void _showInfoDialog(BuildContext context, Map<String, dynamic> pageInfo) {
     showDialog<void>(
       context: context,
@@ -76,6 +79,7 @@ class _TaskListPageState extends State<TaskListPage> {
     return Query(
       options: QueryOptions(
         document: gql(getTasksQuery),
+        variables: {'offset': _offset, 'limit': _limit},
         fetchPolicy: FetchPolicy.networkOnly,
       ),
       builder: (result, {fetchMore, refetch}) {
@@ -99,6 +103,19 @@ class _TaskListPageState extends State<TaskListPage> {
             result.data?['findAllTasks'] as Map<String, dynamic>?;
         final rawTasks = (findAllTasks?['items'] as List?) ?? [];
         final pageInfo = findAllTasks?['pageInfo'] as Map<String, dynamic>?;
+        final totalCount = (pageInfo?['totalCount'] as num?)?.toInt() ?? 0;
+        final hasNextPage = (pageInfo?['hasNextPage'] as bool?) ?? false;
+        final hasPreviousPage =
+            (pageInfo?['hasPreviousPage'] as bool?) ?? false;
+        final int safeLimit = (_limit != null && _limit! > 0) ? _limit! : 1;
+        final int safeOffset = _offset ?? 0;
+
+        final totalPages = ((totalCount + safeLimit - 1) ~/ safeLimit)
+            .clamp(1, double.infinity)
+            .toInt();
+
+        final currentPage = (safeOffset ~/ safeLimit) + 1;
+
         final tasks = rawTasks
             .map((item) => Task.fromJson(item as Map<String, dynamic>))
             .toList();
@@ -163,20 +180,55 @@ class _TaskListPageState extends State<TaskListPage> {
                       ),
                     ),
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    sliver: SliverList.separated(
-                      itemCount: tasks.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 0),
-                      itemBuilder: (context, index) {
-                        final task = tasks[index];
-                        return _TaskCard(
-                          task: task,
-                          index: index,
-                          onDelete: () => _deleteTask(task.id, refetch),
-                        );
-                      },
+                  SliverList.separated(
+                    itemCount: tasks.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 0),
+                    itemBuilder: (context, index) {
+                      final task = tasks[index];
+                      return _TaskCard(
+                        task: task,
+                        index: _offset + index,
+                        onDelete: () => _deleteTask(task.id, refetch),
+                      );
+                    },
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton.outlined(
+                            icon: const Icon(Icons.chevron_left),
+                            tooltip: 'Previous page',
+                            onPressed: hasPreviousPage
+                                ? () => setState(
+                                    () => _offset = (_offset - _limit).clamp(
+                                      0,
+                                      _offset,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Text(
+                            '$currentPage / $totalPages',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                          const SizedBox(width: 16),
+                          IconButton.outlined(
+                            icon: const Icon(Icons.chevron_right),
+                            tooltip: 'Next page',
+                            onPressed: hasNextPage
+                                ? () => setState(() => _offset += _limit)
+                                : null,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],

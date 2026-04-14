@@ -1,6 +1,6 @@
 const String getTasksQuery = r'''
-  query GetTasks {
-    findAllTasks {
+  query GetTasks($offset: Int, $limit: Int) {
+    findAllTasks(offset: $offset, limit: $limit) {
       items {
         id
         title
