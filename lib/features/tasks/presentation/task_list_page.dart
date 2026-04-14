@@ -4,6 +4,7 @@ import 'package:flutter_application_1/features/tasks/data/graphql/mutations.dart
 import 'package:flutter_application_1/features/tasks/data/graphql/queries.dart';
 import 'package:flutter_application_1/features/tasks/data/models/task.dart';
 import 'package:flutter_application_1/features/tasks/presentation/create_task_page.dart';
+import 'package:flutter_application_1/features/tasks/presentation/edit_task_page.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 class TaskListPage extends StatefulWidget {
@@ -14,6 +15,15 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
+  Future<void> _openEditTaskPage(Task task, VoidCallback? refetch) async {
+    final updated = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => EditTaskPage(task: task)));
+    if (updated == true) {
+      refetch?.call();
+    }
+  }
+
   static const int _limit = 5;
   int _offset = 0;
 
@@ -133,24 +143,8 @@ class _TaskListPageState extends State<TaskListPage> {
             ],
           ),
           body: AppGradientBackground(
-            child: Builder(
-              builder: (ctx) {
-                if (result.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (result.hasException) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Error loading tasks:\n${result.exception}',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  );
-                }
-                if (tasks.isEmpty) {
-                  return Center(
+            child: tasks.isEmpty
+                ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -163,105 +157,103 @@ class _TaskListPageState extends State<TaskListPage> {
                         ),
                       ],
                     ),
-                  );
-                }
-                return CustomScrollView(
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: FilledButton.icon(
-                          onPressed: () => _openCreateTaskPage(refetch),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Crear nueva tarea'),
+                  )
+                : CustomScrollView(
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                          child: FilledButton.icon(
+                            onPressed: () => _openCreateTaskPage(refetch),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Crear nueva tarea'),
+                          ),
                         ),
                       ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                        child: Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(18),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.insights_rounded,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    'Mostrando ${tasks.length} de $totalCount tareas',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.titleSmall,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      SliverList.separated(
+                        itemCount: tasks.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 0),
+                        itemBuilder: (context, index) {
+                          final task = tasks[index];
+                          return _TaskCard(
+                            task: task,
+                            index: _offset + index,
+                            onDelete: () => _deleteTask(task.id, refetch),
+                            onEdit: () => _openEditTaskPage(task, refetch),
+                          );
+                        },
+                      ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
                           child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(
-                                Icons.insights_rounded,
-                                color: Theme.of(context).colorScheme.primary,
+                              IconButton.outlined(
+                                icon: const Icon(Icons.chevron_left),
+                                tooltip: 'Pagina anterior',
+                                onPressed: hasPreviousPage
+                                    ? () => setState(
+                                        () => _offset = (_offset - _limit)
+                                            .clamp(0, _offset),
+                                      )
+                                    : null,
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Mostrando ${tasks.length} de $totalCount tareas',
-                                  style: Theme.of(context).textTheme.titleSmall,
-                                ),
+                              const SizedBox(width: 16),
+                              Text(
+                                '$currentPage / $totalPages',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(width: 16),
+                              IconButton.outlined(
+                                icon: const Icon(Icons.chevron_right),
+                                tooltip: 'Pagina siguiente',
+                                onPressed: hasNextPage
+                                    ? () => setState(() => _offset += _limit)
+                                    : null,
                               ),
                             ],
                           ),
                         ),
                       ),
-                    ),
-                    SliverList.separated(
-                      itemCount: tasks.length,
-                      separatorBuilder: (context, index) =>
-                          const SizedBox(height: 0),
-                      itemBuilder: (context, index) {
-                        final task = tasks[index];
-                        return _TaskCard(
-                          task: task,
-                          index: _offset + index,
-                          onDelete: () => _deleteTask(task.id, refetch),
-                        );
-                      },
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            IconButton.outlined(
-                              icon: const Icon(Icons.chevron_left),
-                              tooltip: 'Pagina anterior',
-                              onPressed: hasPreviousPage
-                                  ? () => setState(
-                                      () => _offset = (_offset - _limit).clamp(
-                                        0,
-                                        _offset,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 16),
-                            Text(
-                              '$currentPage / $totalPages',
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            const SizedBox(width: 16),
-                            IconButton.outlined(
-                              icon: const Icon(Icons.chevron_right),
-                              tooltip: 'Pagina siguiente',
-                              onPressed: hasNextPage
-                                  ? () => setState(() => _offset += _limit)
-                                  : null,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                    ],
+                  ),
           ),
         );
       },
@@ -273,11 +265,13 @@ class _TaskCard extends StatelessWidget {
   final Task task;
   final int index;
   final VoidCallback onDelete;
+  final VoidCallback onEdit;
 
   const _TaskCard({
     required this.task,
     required this.index,
     required this.onDelete,
+    required this.onEdit,
   });
 
   @override
@@ -305,6 +299,11 @@ class _TaskCard extends StatelessWidget {
                     task.title,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Editar',
+                  onPressed: onEdit,
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
