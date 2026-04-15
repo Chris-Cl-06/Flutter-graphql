@@ -39,40 +39,40 @@ Todo el consumo de datos se hace por GraphQL con graphql_flutter.
 Ruta base: lib
 
 - core
-	- constants
-		- api_constants.dart
-	- graphql
-		- graphql_client.dart
-	- widgets
-		- app_gradient_background.dart
+  - constants
+    - api_constants.dart
+  - graphql
+    - graphql_client.dart
+  - widgets
+    - app_gradient_background.dart
 - features
-	- home
-		- presentation
-			- home_shell_page.dart
-	- tasks
-		- data
-			- graphql
-				- queries.dart
-				- mutations.dart
-			- models
-				- task.dart
-		- presentation
-			- task_list_page.dart
-			- create_task_page.dart
-			- edit_task_page.dart
-	- categories
-		- data
-			- graphql
-				- queries.dart
-				- mutations.dart
-			- models
-				- category.dart
-		- presentation
-			- category_list_page.dart
-			- create_category_page.dart
-			- widgets
-				- category_card.dart
-		- functions_categories.dart
+  - home
+    - presentation
+      - home_shell_page.dart
+  - tasks
+    - data
+      - graphql
+        - queries.dart
+        - mutations.dart
+      - models
+        - task.dart
+    - presentation
+      - task_list_page.dart
+      - create_task_page.dart
+      - edit_task_page.dart
+  - categories
+    - data
+      - graphql
+        - queries.dart
+        - mutations.dart
+      - models
+        - category.dart
+    - presentation
+      - category_list_page.dart
+      - create_category_page.dart
+      - widgets
+        - category_card.dart
+    - functions_categories.dart
 
 ## Configuracion GraphQL
 
@@ -86,7 +86,7 @@ El endpoint se define en:
 
 Valor actual:
 
-- http://localhost:8080/graphql
+- <http://localhost:8080/graphql>
 
 Nota importante:
 
@@ -228,9 +228,9 @@ Ahi viven:
 flutter pub get
 ```
 
-2. Levantar tu backend GraphQL en el endpoint configurado
+1. Levantar tu backend GraphQL en el endpoint configurado
 
-3. Correr app
+1. Correr app
 
 ```bash
 flutter run

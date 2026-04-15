@@ -113,16 +113,26 @@ class _EditTaskPageState extends State<EditTaskPage> {
                   const SizedBox(height: 18),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCategoryId,
-                    items: categoryList
-                        .map(
-                          (cat) => DropdownMenuItem(
-                            value: cat.id,
-                            child: Text(cat.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => setState(() => _selectedCategoryId = v),
-                    decoration: const InputDecoration(labelText: 'Categoría'),
+                    decoration: const InputDecoration(labelText: 'Categoria'),
+                    items: [
+                      const DropdownMenuItem<String>(
+                        value: '',
+                        child: Text('Sin categoria'),
+                      ),
+                      ...categoryList.map(
+                        (category) => DropdownMenuItem<String>(
+                          value: category.id,
+                          child: Text(category.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategoryId = value == null || value.isEmpty
+                            ? null
+                            : value;
+                      });
+                    },
                   ),
                   const SizedBox(height: 18),
                   SwitchListTile(
