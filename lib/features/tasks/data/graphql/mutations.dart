@@ -1,7 +1,7 @@
 const String updateTaskMutation = r'''
   mutation UpdateTask(
     $id: ID!,
-    $input: TaskInput!
+    $input: TaskUpdateInput!
   ) {
     updateTask(id: $id, input: $input) {
       id
@@ -12,6 +12,7 @@ const String updateTaskMutation = r'''
     }
   }
 ''';
+
 const String createTaskMutation = r'''
   mutation CreateTask($input: TaskInput!) {
     createTask(input: $input) {
@@ -25,7 +26,10 @@ const String createTaskMutation = r'''
 ''';
 
 const String deleteTaskMutation = r'''
-  mutation DeleteTask($id: ID!) {
-    deleteTask(id: $id)
+  mutation toggleDeleteTask($id: ID!) {
+    toggleDeleteTask(id: $id) {
+      id
+      deleted
+    }
   }
 ''';

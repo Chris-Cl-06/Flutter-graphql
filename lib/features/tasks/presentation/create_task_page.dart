@@ -99,7 +99,9 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                 result.data?['categories'] as Map<String, dynamic>?;
             final rawCategories = (categoriesResponse?['items'] as List?) ?? [];
             final categories = rawCategories
-                .map((item) => Category.fromJson(item as Map<String, dynamic>))
+                .map(
+                  (item) => Categories.fromJson(item as Map<String, dynamic>),
+                )
                 .where((category) => category.isActive)
                 .toList();
 

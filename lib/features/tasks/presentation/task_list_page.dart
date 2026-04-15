@@ -27,7 +27,12 @@ class _TaskListPageState extends State<TaskListPage> {
   static const int _limit = 5;
   int _offset = 0;
 
-  void _showInfoDialog(BuildContext context, Map<String, dynamic> pageInfo) {
+  void _showInfoDialog(
+    BuildContext context,
+    Map<String, dynamic> pageInfo,
+    // int pendingCount,
+    // int completedCount,
+  ) {
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -36,6 +41,8 @@ class _TaskListPageState extends State<TaskListPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _InfoRow('Total tasks', '${pageInfo['totalCount']}'),
+            // _InfoRow('Pending tasks', '$pendingCount'),
+            // _InfoRow('Completed tasks', '$completedCount'),
             _InfoRow('Offset', '${pageInfo['offset'] ?? 0}'),
             _InfoRow('Limit', '${pageInfo['limit'] ?? '-'}'),
             _InfoRow('Has next page', '${pageInfo['hasNextPage'] ?? false}'),
@@ -55,6 +62,7 @@ class _TaskListPageState extends State<TaskListPage> {
     );
   }
 
+  //metodo para eliminar , se llama al apretar el icono de basura
   Future<void> _deleteTask(String id, VoidCallback? refetch) async {
     final client = GraphQLProvider.of(context).value;
     final result = await client.mutate(
@@ -72,9 +80,12 @@ class _TaskListPageState extends State<TaskListPage> {
       return;
     }
 
+    print(result.data);
+
     refetch?.call();
   }
 
+  //Metodo que abre la pagina de crear una task
   Future<void> _openCreateTaskPage(VoidCallback? refetch) async {
     final created = await Navigator.of(
       context,
@@ -123,6 +134,12 @@ class _TaskListPageState extends State<TaskListPage> {
           999999,
         );
         final currentPage = (_offset ~/ _limit) + 1;
+        // final pendingCount = rawTasks
+        //     .where((t) => t['completed'] == false)
+        //     .length;
+        // final completedCount = rawTasks
+        //     .where((t) => t['completed'] == true)
+        //     .length;
 
         final tasks = rawTasks
             .map((item) => Task.fromJson(item as Map<String, dynamic>))
@@ -138,7 +155,10 @@ class _TaskListPageState extends State<TaskListPage> {
                 IconButton(
                   icon: const Icon(Icons.info_outline),
                   tooltip: 'Info de pagina',
-                  onPressed: () => _showInfoDialog(context, pageInfo),
+                  onPressed: () => _showInfoDialog(
+                    context,
+                    pageInfo /*, pendingCount, completedCount*/,
+                  ),
                 ),
             ],
           ),
@@ -307,6 +327,7 @@ class _TaskCard extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Eliminar',
                   onPressed: onDelete,
                 ),
               ],

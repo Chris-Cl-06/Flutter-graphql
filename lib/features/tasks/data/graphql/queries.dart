@@ -1,6 +1,6 @@
 const String getTasksQuery = r'''
   query GetTasks($offset: Int, $limit: Int) {
-    findAllTasks(offset: $offset, limit: $limit) {
+    findAllTasks(deleted: false, offset: $offset, limit: $limit) {
       items {
         id
         title
@@ -11,25 +11,6 @@ const String getTasksQuery = r'''
           id
           name
         }
-      }
-      pageInfo {
-        offset
-        limit
-        totalCount
-        hasNextPage
-        hasPreviousPage
-      }
-    }
-  }
-''';
-
-const String getCategoriesQuery = r'''
-  query GetCategories {
-    categories {
-      items {
-        id
-        name
-        isActive
       }
       pageInfo {
         offset

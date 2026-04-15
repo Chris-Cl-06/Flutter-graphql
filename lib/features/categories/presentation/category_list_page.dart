@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/widgets/app_gradient_background.dart';
+import 'package:flutter_application_1/features/categories/data/graphql/mutations.dart';
 import 'package:flutter_application_1/features/categories/data/graphql/queries.dart';
 import 'package:flutter_application_1/features/categories/data/models/category.dart';
 import 'package:flutter_application_1/features/categories/presentation/create_category_page.dart';
@@ -26,6 +28,36 @@ class _CategoryListPageState extends State<CategoryListPage> {
     if (created == true) {
       refetch?.call();
     }
+  }
+
+  //metodo para eliminar , se llama al apretar el icono de basura
+  Future<void> _deleteCategory(
+    String id,
+    bool isActive,
+    VoidCallback? refetch,
+  ) async {
+    final client = GraphQLProvider.of(context).value;
+    final result = await client.mutate(
+      MutationOptions(
+        document: gql(deleteCategoryMutation),
+        variables: {'id': id, 'isActive': !isActive},
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (result.hasException) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting category: ${result.exception}')),
+      );
+      return;
+    }
+
+    print(result.data);
+
+    refetch?.call();
   }
 
   void _showInfoDialog(BuildContext context, Map<String, dynamic> pageInfo) {
@@ -84,7 +116,7 @@ class _CategoryListPageState extends State<CategoryListPage> {
         final currentPage = (_offset ~/ _limit) + 1;
 
         final categories = rawCategories
-            .map((item) => Category.fromJson(item as Map<String, dynamic>))
+            .map((item) => Categories.fromJson(item as Map<String, dynamic>))
             .toList();
 
         return Scaffold(
@@ -168,9 +200,15 @@ class _CategoryListPageState extends State<CategoryListPage> {
                         separatorBuilder: (context, index) =>
                             const SizedBox(height: 0),
                         itemBuilder: (context, index) {
+                          final category = categories[index];
                           return _CategoryCard(
-                            category: categories[index],
+                            category: category,
                             index: _offset + index,
+                            onDelete: () => _deleteCategory(
+                              category.id,
+                              category.isActive,
+                              refetch,
+                            ),
                           );
                         },
                       ),
@@ -220,10 +258,15 @@ class _CategoryListPageState extends State<CategoryListPage> {
 }
 
 class _CategoryCard extends StatelessWidget {
-  final Category category;
+  final Categories category;
   final int index;
+  final VoidCallback onDelete;
 
-  const _CategoryCard({required this.category, required this.index});
+  const _CategoryCard({
+    required this.category,
+    required this.index,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +295,10 @@ class _CategoryCard extends StatelessWidget {
                     category.name,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: onDelete,
                 ),
               ],
             ),

@@ -53,8 +53,8 @@ class _EditTaskPageState extends State<EditTaskPage> {
             'description': _descriptionController.text.trim().isEmpty
                 ? null
                 : _descriptionController.text.trim(),
-            'categoryId': _selectedCategoryId,
             'completed': _completed,
+            'categoryId': _selectedCategoryId,
           },
         },
       ),
@@ -74,7 +74,7 @@ class _EditTaskPageState extends State<EditTaskPage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    //final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Editar Tarea')),
       body: Query(
@@ -87,8 +87,8 @@ class _EditTaskPageState extends State<EditTaskPage> {
             return Center(child: Text('Error cargando categorías'));
           }
           final List categories = result.data?['categories']?['items'] ?? [];
-          final List<Category> categoryList = categories
-              .map((c) => Category.fromJson(c))
+          final List<Categories> categoryList = categories
+              .map((c) => Categories.fromJson(c))
               .where((c) => c.isActive)
               .toList();
           return Padding(
@@ -112,7 +112,7 @@ class _EditTaskPageState extends State<EditTaskPage> {
                   ),
                   const SizedBox(height: 18),
                   DropdownButtonFormField<String>(
-                    value: _selectedCategoryId,
+                    initialValue: _selectedCategoryId,
                     items: categoryList
                         .map(
                           (cat) => DropdownMenuItem(

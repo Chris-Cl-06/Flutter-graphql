@@ -1,16 +1,16 @@
-class Category {
+class Categories {
   final String id;
   final String name;
   final bool isActive;
 
-  const Category({
+  const Categories({
     required this.id,
     required this.name,
     required this.isActive,
   });
 
-  factory Category.fromJson(Map<String, dynamic> json) {
-    return Category(
+  factory Categories.fromJson(Map<String, dynamic> json) {
+    return Categories(
       id: (json['id'] ?? '').toString(),
       name: (json['name'] ?? '').toString(),
       isActive: json['isActive'] as bool? ?? true,
