@@ -93,10 +93,10 @@ class _TaskListPageState extends State<TaskListPage> {
     final client = GraphQLProvider.of(context).value;
     final result = await client.mutate(
       MutationOptions(
-        document: gql(updateTaskMutation),
+        document: gql(toggleTaskMutation),
         variables: {
           'id': id,
-          'input': {'completed': completed},
+          //'input': {'completed': completed},
         },
       ),
     );

@@ -13,12 +13,11 @@ const String updateTaskMutation = r'''
   }
 ''';
 
-const String updateTaskStateMutation = r'''
-  mutation UpdateTask(
+const String toggleTaskMutation = r'''
+  mutation ToggleTask(
     $id: ID!,
-    $input: TaskUpdateInput!
   ) {
-    updateTask(id: $id, input: $input) {
+    toggleTask(id: $id) {
       id
       title
       description
