@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/core/widgets/app_gradient_background.dart';
 import 'package:flutter_application_1/features/tasks/data/graphql/mutations.dart';
@@ -15,6 +17,17 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
+  static const int _easterEggTapTarget = 6;
+  static const Duration _tapResetWindow = Duration(milliseconds: 1200);
+  static const Duration _easterEggDuration = Duration(seconds: 3);
+  static const String _easterEggGifUrl =
+      'https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExY25kYTY3YjRiM2Z2cnhoc25nOXhmcmhhejAyd2c1ZzZ5aGMzbjY0ayZlcD12MV9naWZzX3NlYXJjaCZjdD1n/YaP3iYxN3T8nIEN5rD/giphy.gif';
+
+  int _titleTapCount = 0;
+  Timer? _titleTapResetTimer;
+  Timer? _easterEggCloseTimer;
+  bool _isEasterEggOpen = false;
+
   Future<void> _openEditTaskPage(Task task, VoidCallback? refetch) async {
     final updated = await Navigator.of(
       context,
@@ -26,6 +39,71 @@ class _TaskListPageState extends State<TaskListPage> {
 
   static const int _limit = 5;
   int _offset = 0;
+
+  void _onTareasTitleTap() {
+    _titleTapResetTimer?.cancel();
+    _titleTapCount += 1;
+
+    if (_titleTapCount >= _easterEggTapTarget) {
+      _titleTapCount = 0;
+      _showEasterEggGif();
+      return;
+    }
+
+    _titleTapResetTimer = Timer(_tapResetWindow, () {
+      _titleTapCount = 0;
+    });
+  }
+
+  void _showEasterEggGif() {
+    if (_isEasterEggOpen) {
+      return;
+    }
+
+    _isEasterEggOpen = true;
+    final navigator = Navigator.of(context, rootNavigator: true);
+
+    showDialog<void>(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: true,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Center(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Image.network(
+              _easterEggGifUrl,
+              width: 260,
+              height: 260,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ),
+    ).whenComplete(() {
+      _easterEggCloseTimer?.cancel();
+      _isEasterEggOpen = false;
+    });
+
+    _easterEggCloseTimer?.cancel();
+    _easterEggCloseTimer = Timer(_easterEggDuration, () {
+      if (!mounted) {
+        return;
+      }
+      if (_isEasterEggOpen) {
+        navigator.maybePop();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _titleTapResetTimer?.cancel();
+    _easterEggCloseTimer?.cancel();
+    super.dispose();
+  }
 
   void _showInfoDialog(
     BuildContext context,
@@ -178,7 +256,10 @@ class _TaskListPageState extends State<TaskListPage> {
         return Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: const Text('Tareas'),
+            title: GestureDetector(
+              onTap: _onTareasTitleTap,
+              child: const Text('Tareas'),
+            ),
             centerTitle: true,
             actions: [
               if (pageInfo != null)
