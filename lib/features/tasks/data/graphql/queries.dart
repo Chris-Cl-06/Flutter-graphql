@@ -18,6 +18,7 @@ const String getTasksQuery = r'''
         totalCount
         hasNextPage
         hasPreviousPage
+        taskCompleted
       }
     }
   }

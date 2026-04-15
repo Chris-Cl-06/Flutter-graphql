@@ -41,8 +41,11 @@ class _TaskListPageState extends State<TaskListPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _InfoRow('Total tasks', '${pageInfo['totalCount']}'),
-            // _InfoRow('Pending tasks', '$pendingCount'),
-            // _InfoRow('Completed tasks', '$completedCount'),
+            _InfoRow(
+              'Pending tasks',
+              '${pageInfo['totalCount'] - (pageInfo['taskCompleted'] ?? 0)}',
+            ),
+            _InfoRow('Completed tasks', '${pageInfo['taskCompleted'] ?? 0}'),
             _InfoRow('Offset', '${pageInfo['offset'] ?? 0}'),
             _InfoRow('Limit', '${pageInfo['limit'] ?? '-'}'),
             _InfoRow('Has next page', '${pageInfo['hasNextPage'] ?? false}'),
