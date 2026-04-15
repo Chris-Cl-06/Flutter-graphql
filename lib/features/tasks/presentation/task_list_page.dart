@@ -85,6 +85,33 @@ class _TaskListPageState extends State<TaskListPage> {
     refetch?.call();
   }
 
+  Future<void> _editTaskState(
+    String id,
+    bool completed,
+    VoidCallback? refetch,
+  ) async {
+    final client = GraphQLProvider.of(context).value;
+    final result = await client.mutate(
+      MutationOptions(
+        document: gql(updateTaskMutation),
+        variables: {
+          'id': id,
+          'input': {'completed': completed},
+        },
+      ),
+    );
+    if (!mounted) return;
+    if (result.hasException) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating task: [31m${result.exception}[0m'),
+        ),
+      );
+      return;
+    }
+    refetch?.call();
+  }
+
   //Metodo que abre la pagina de crear una task
   Future<void> _openCreateTaskPage(VoidCallback? refetch) async {
     final created = await Navigator.of(
@@ -233,6 +260,11 @@ class _TaskListPageState extends State<TaskListPage> {
                             index: _offset + index,
                             onDelete: () => _deleteTask(task.id, refetch),
                             onEdit: () => _openEditTaskPage(task, refetch),
+                            onToggle: () => _editTaskState(
+                              task.id,
+                              !task.completed,
+                              refetch,
+                            ),
                           );
                         },
                       ),
@@ -286,17 +318,22 @@ class _TaskCard extends StatelessWidget {
   final int index;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback onToggle;
 
   const _TaskCard({
     required this.task,
     required this.index,
     required this.onDelete,
     required this.onEdit,
+    required this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: task.completed
+          ? Colors.greenAccent.withValues(alpha: 0.3)
+          : Colors.white.withValues(alpha: 0.9),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -305,14 +342,18 @@ class _TaskCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
-                  task.completed
-                      ? Icons.check_circle
-                      : Icons.radio_button_unchecked,
-                  color: task.completed
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
+                IconButton(
+                  onPressed: onToggle,
+                  icon: Icon(
+                    task.completed
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: task.completed
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
                 ),
+
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

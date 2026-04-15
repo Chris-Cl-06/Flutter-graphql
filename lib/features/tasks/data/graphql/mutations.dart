@@ -13,6 +13,21 @@ const String updateTaskMutation = r'''
   }
 ''';
 
+const String updateTaskStateMutation = r'''
+  mutation UpdateTask(
+    $id: ID!,
+    $input: TaskUpdateInput!
+  ) {
+    updateTask(id: $id, input: $input) {
+      id
+      title
+      description
+      completed
+      categoryId
+    }
+  }
+''';
+
 const String createTaskMutation = r'''
   mutation CreateTask($input: TaskInput!) {
     createTask(input: $input) {
