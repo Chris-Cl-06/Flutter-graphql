@@ -5,6 +5,7 @@ import 'package:flutter_application_1/features/categories/data/graphql/mutations
 import 'package:flutter_application_1/features/categories/data/graphql/queries.dart';
 import 'package:flutter_application_1/features/categories/data/models/category.dart';
 import 'package:flutter_application_1/features/categories/presentation/create_category_page.dart';
+import 'package:flutter_application_1/features/tasks/data/graphql/queries.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 class CategoryListPage extends StatefulWidget {
@@ -17,6 +18,17 @@ class CategoryListPage extends StatefulWidget {
 class _CategoryListPageState extends State<CategoryListPage> {
   static const int _limit = 8;
   int _offset = 0;
+
+  Future<void> _refetchTasksAfterCategoryDelete() async {
+    final client = GraphQLProvider.of(context).value;
+    await client.query(
+      QueryOptions(
+        document: gql(getTasksQuery),
+        variables: {'offset': 0, 'limit': 5},
+        fetchPolicy: FetchPolicy.networkOnly,
+      ),
+    );
+  }
 
   Future<void> _openCreateCategoryPage(
     BuildContext context,
@@ -31,16 +43,12 @@ class _CategoryListPageState extends State<CategoryListPage> {
   }
 
   //metodo para eliminar , se llama al apretar el icono de basura
-  Future<void> _deleteCategory(
-    String id,
-    bool isActive,
-    VoidCallback? refetch,
-  ) async {
+  Future<void> _deleteCategory(String id, VoidCallback? refetch) async {
     final client = GraphQLProvider.of(context).value;
     final result = await client.mutate(
       MutationOptions(
         document: gql(deleteCategoryMutation),
-        variables: {'id': id, 'isActive': !isActive},
+        variables: {'id': id},
       ),
     );
 
@@ -57,7 +65,71 @@ class _CategoryListPageState extends State<CategoryListPage> {
 
     print(result.data);
 
+    await _refetchTasksAfterCategoryDelete();
+
     refetch?.call();
+  }
+
+  Future<void> _toggleCategory(
+    String id,
+    bool isActive,
+    VoidCallback? refetch,
+  ) async {
+    final client = GraphQLProvider.of(context).value;
+    final result = await client.mutate(
+      MutationOptions(
+        document: gql(updateCategoryMutation),
+        variables: {'id': id, 'name': null, 'isActive': !isActive},
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (result.hasException) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating category state: ${result.exception}'),
+        ),
+      );
+      return;
+    }
+
+    print(result.data);
+
+    refetch?.call();
+  }
+
+  Future<bool> _updateCategoryName(
+    String id,
+    String name,
+    bool isActive,
+    VoidCallback? refetch,
+  ) async {
+    final client = GraphQLProvider.of(context).value;
+    final result = await client.mutate(
+      MutationOptions(
+        document: gql(updateCategoryMutation),
+        variables: {'id': id, 'name': name, 'isActive': isActive},
+      ),
+    );
+
+    if (!mounted) {
+      return false;
+    }
+
+    if (result.hasException) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating category name: ${result.exception}'),
+        ),
+      );
+      return false;
+    }
+
+    refetch?.call();
+    return true;
   }
 
   void _showInfoDialog(BuildContext context, Map<String, dynamic> pageInfo) {
@@ -204,8 +276,16 @@ class _CategoryListPageState extends State<CategoryListPage> {
                           return _CategoryCard(
                             category: category,
                             index: _offset + index,
-                            onDelete: () => _deleteCategory(
+                            onDelete: () =>
+                                _deleteCategory(category.id, refetch),
+                            onToggle: () => _toggleCategory(
                               category.id,
+                              category.isActive,
+                              refetch,
+                            ),
+                            onSaveName: (newName) => _updateCategoryName(
+                              category.id,
+                              newName,
                               category.isActive,
                               refetch,
                             ),
@@ -257,16 +337,95 @@ class _CategoryListPageState extends State<CategoryListPage> {
   }
 }
 
-class _CategoryCard extends StatelessWidget {
+class _CategoryCard extends StatefulWidget {
   final Categories category;
   final int index;
   final VoidCallback onDelete;
+  final VoidCallback onToggle;
+  final Future<bool> Function(String newName) onSaveName;
 
   const _CategoryCard({
     required this.category,
     required this.index,
     required this.onDelete,
+    required this.onToggle,
+    required this.onSaveName,
   });
+
+  @override
+  State<_CategoryCard> createState() => _CategoryCardState();
+}
+
+class _CategoryCardState extends State<_CategoryCard> {
+  late final TextEditingController _nameController;
+  bool _isEditingName = false;
+  bool _isSavingName = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.category.name);
+  }
+
+  @override
+  void didUpdateWidget(covariant _CategoryCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nameChanged = oldWidget.category.name != widget.category.name;
+    final categoryChanged = oldWidget.category.id != widget.category.id;
+    if ((nameChanged || categoryChanged) && !_isEditingName) {
+      _nameController.text = widget.category.name;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleEditOrSave() async {
+    if (_isSavingName) {
+      return;
+    }
+
+    if (!_isEditingName) {
+      setState(() {
+        _isEditingName = true;
+      });
+      return;
+    }
+
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El nombre no puede estar vacio')),
+      );
+      return;
+    }
+
+    if (newName == widget.category.name) {
+      setState(() {
+        _isEditingName = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSavingName = true;
+    });
+
+    final saved = await widget.onSaveName(newName);
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isSavingName = false;
+      if (saved) {
+        _isEditingName = false;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -279,26 +438,54 @@ class _CategoryCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: category.isActive
-                        ? const Color(0xFF10B981)
-                        : Colors.grey,
-                    shape: BoxShape.circle,
+                IconButton(
+                  onPressed: widget.onToggle,
+                  icon: Icon(
+                    widget.category.isActive
+                        ? Icons.check_circle
+                        : Icons.radio_button_unchecked,
+                    color: widget.category.isActive
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    category.name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  child: _isEditingName
+                      ? TextField(
+                          controller: _nameController,
+                          autofocus: true,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _handleEditOrSave(),
+                          decoration: const InputDecoration(
+                            isDense: true,
+                            hintText: 'Nuevo nombre',
+                            border: OutlineInputBorder(),
+                          ),
+                        )
+                      : Text(
+                          widget.category.name,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                ),
+                IconButton(
+                  icon: _isSavingName
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          _isEditingName
+                              ? Icons.check_circle_outline
+                              : Icons.edit_outlined,
+                        ),
+                  tooltip: _isEditingName ? 'Guardar nombre' : 'Editar nombre',
+                  onPressed: _handleEditOrSave,
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
-                  onPressed: onDelete,
+                  onPressed: widget.onDelete,
                 ),
               ],
             ),
@@ -307,9 +494,11 @@ class _CategoryCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                Chip(label: Text('Indice #${index + 1}')),
-                Chip(label: Text('ID ${category.id}')),
-                Chip(label: Text(category.isActive ? 'Activa' : 'Inactiva')),
+                Chip(label: Text('Indice #${widget.index + 1}')),
+                //Chip(label: Text('ID ${widget.category.id}')),
+                Chip(
+                  label: Text(widget.category.isActive ? 'Activa' : 'Inactiva'),
+                ),
               ],
             ),
           ],
