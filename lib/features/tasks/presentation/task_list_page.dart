@@ -30,7 +30,7 @@ class _TaskListPageState extends State<TaskListPage> {
 
   static const int _limit = 4;
   int _offset = 0;
-  String? _selectedCategoryId;
+  final Set<String> _selectedCategoryIds = <String>{};
 
   void _onTareasTitleTap() {
     _titleTapResetTimer?.cancel();
@@ -76,7 +76,9 @@ class _TaskListPageState extends State<TaskListPage> {
         variables: {
           'offset': _offset,
           'limit': _limit,
-          'categoryId': _selectedCategoryId,
+          'categoryId': _selectedCategoryIds.isEmpty
+              ? null
+              : _selectedCategoryIds.toList(),
         },
         fetchPolicy: FetchPolicy.networkOnly,
       ),
@@ -107,7 +109,7 @@ class _TaskListPageState extends State<TaskListPage> {
 
         // --- CONSTRUCCIÓN DEL CONTENIDO (CustomScrollView) ---
         final listContent =
-            (tasks.isEmpty && !result.isLoading && _selectedCategoryId == null)
+            (tasks.isEmpty && !result.isLoading && _selectedCategoryIds.isEmpty)
             ? Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -160,7 +162,9 @@ class _TaskListPageState extends State<TaskListPage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                'Mostrando ${tasks.length} de $totalCount tareas',
+                                _selectedCategoryIds.isEmpty
+                                    ? 'Mostrando ${tasks.length} de $totalCount tareas'
+                                    : 'Mostrando ${tasks.length} resultados filtrados',
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                             ),
@@ -203,11 +207,11 @@ class _TaskListPageState extends State<TaskListPage> {
                                 padding: const EdgeInsets.only(right: 8),
                                 child: FilterChip(
                                   label: const Text('Todas'),
-                                  selected: _selectedCategoryId == null,
+                                  selected: _selectedCategoryIds.isEmpty,
                                   onSelected: (_) {
                                     setState(() {
                                       _offset = 0;
-                                      _selectedCategoryId = null;
+                                      _selectedCategoryIds.clear();
                                     });
                                   },
                                 ),
@@ -218,13 +222,17 @@ class _TaskListPageState extends State<TaskListPage> {
                                   padding: const EdgeInsets.only(right: 8),
                                   child: FilterChip(
                                     label: Text(category.name),
-                                    selected: _selectedCategoryId == catId,
+                                    selected: _selectedCategoryIds.contains(
+                                      catId,
+                                    ),
                                     onSelected: (bool selected) {
                                       setState(() {
                                         _offset = 0;
-                                        _selectedCategoryId = selected
-                                            ? catId
-                                            : null;
+                                        if (selected) {
+                                          _selectedCategoryIds.add(catId);
+                                        } else {
+                                          _selectedCategoryIds.remove(catId);
+                                        }
                                       });
                                     },
                                   ),
@@ -240,7 +248,7 @@ class _TaskListPageState extends State<TaskListPage> {
                   // 4. Lista de Tareas o Mensaje de Vacío
                   if (tasks.isEmpty &&
                       !result.isLoading &&
-                      _selectedCategoryId != null)
+                      _selectedCategoryIds.isNotEmpty)
                     const SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(16, 40, 16, 12),
