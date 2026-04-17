@@ -32,12 +32,12 @@ class _LoginScreenState extends State<LoginScreen> {
         alignment: Alignment.center,
         child: Container(
           height: screenHeight * 0.5,
-          width: screenWidth * 0.65,
+          width: screenWidth * 0.8,
           margin: const EdgeInsets.symmetric(horizontal: 30),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.white),
             borderRadius: BorderRadius.circular(15),
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withAlpha(25),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
@@ -57,7 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextUtil(text: "Email"),
                     Container(
                       height: 35,
-
                       child: TextFormField(
                         style: const TextStyle(color: Colors.white),
                         decoration: const InputDecoration(
@@ -113,13 +112,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(30),
                         ),
                         alignment: Alignment.center,
-                        child: TextUtil(text: "Log In", color: Colors.black),
+                        child: TextUtil(
+                          text: "Log In",
+                          color: const Color.fromARGB(255, 216, 206, 206),
+                        ),
                       ),
                     ),
                     const Spacer(),
                     Center(
                       child: TextUtil(
-                        text: "Don't have a account REGISTER",
+                        text: "Don't have a account?        REGISTER",
                         size: 12,
                         weight: true,
                       ),

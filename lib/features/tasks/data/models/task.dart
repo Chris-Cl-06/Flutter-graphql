@@ -5,6 +5,7 @@ class Task {
   final bool completed;
   final String? categoryId;
   final String? categoryName;
+  final bool? categoryActive;
 
   const Task({
     required this.id,
@@ -13,6 +14,7 @@ class Task {
     required this.completed,
     this.categoryId,
     this.categoryName,
+    this.categoryActive,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class Task {
       completed: json['completed'] as bool? ?? false,
       categoryId: json['categoryId'] as String?,
       categoryName: category?['name'] as String?,
+      categoryActive: category?['isActive'] as bool?,
     );
   }
 
@@ -36,6 +39,7 @@ class Task {
       'completed': completed,
       'categoryId': categoryId,
       'categoryName': categoryName,
+      'categoryActive': categoryActive,
     };
   }
 }

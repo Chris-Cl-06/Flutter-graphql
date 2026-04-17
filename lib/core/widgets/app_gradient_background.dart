@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/data/bg_data.dart';
 
 class AppGradientBackground extends StatelessWidget {
   final Widget child;
@@ -27,18 +26,6 @@ class AppGradientBackground extends StatelessWidget {
           ),
           child: const SizedBox.expand(),
         ),
-        if (bgList.isNotEmpty)
-          Center(
-            child: Opacity(
-              opacity: 0.06,
-              child: Image.asset(
-                bgList[0],
-                fit: BoxFit.contain,
-                width: 520,
-                gaplessPlayback: true,
-              ),
-            ),
-          ),
         child,
       ],
     );

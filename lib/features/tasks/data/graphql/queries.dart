@@ -10,6 +10,7 @@ const String getTasksQuery = r'''
         category {
           id
           name
+          isActive
         }
       }
       pageInfo {

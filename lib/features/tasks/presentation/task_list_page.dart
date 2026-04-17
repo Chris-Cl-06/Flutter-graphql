@@ -28,10 +28,12 @@ class _TaskListPageState extends State<TaskListPage> {
   Timer? _easterEggCloseTimer;
   bool _isEasterEggOpen = false;
 
+  //limite de cuantas tareas salen por pagina
   static const int _limit = 4;
   int _offset = 0;
   final Set<String> _selectedCategoryIds = <String>{};
 
+  //easteregg
   void _onTareasTitleTap() {
     _titleTapResetTimer?.cancel();
     _titleTapCount += 1;
@@ -71,6 +73,8 @@ class _TaskListPageState extends State<TaskListPage> {
   @override
   Widget build(BuildContext context) {
     return Query(
+      //llamamos a la query de getTasks y pasamos los parametros de
+      //paginacion y filtro por categoria
       options: QueryOptions(
         document: gql(getTasksQuery),
         variables: {
@@ -82,6 +86,7 @@ class _TaskListPageState extends State<TaskListPage> {
         },
         fetchPolicy: FetchPolicy.networkOnly,
       ),
+      //el builder nos da el resultado de la llamada y las funciones para cargar mas o recargar
       builder: (result, {fetchMore, refetch}) {
         if (result.hasException) {
           return Center(child: Text('Error: ${result.exception}'));
@@ -96,18 +101,19 @@ class _TaskListPageState extends State<TaskListPage> {
 
         final tasks = rawTasks
             .map((item) => Task.fromJson(item as Map<String, dynamic>))
+            .where((item) => item.categoryActive != false)
             .toList();
 
         // --- LÓGICA DE PAGINACIÓN ---
-        final hasPreviousPage = _offset > 0;
-        final hasNextPage = _offset + _limit < totalCount;
+        final hasPreviousPage = pageInfo?['hasPreviousPage'] ?? false;
+        final hasNextPage = pageInfo?['hasNextPage'] ?? false;
         final totalPages = ((totalCount + _limit - 1) ~/ _limit).clamp(
           1,
           999999,
         );
         final currentPage = (_offset ~/ _limit) + 1;
 
-        // --- CONSTRUCCIÓN DEL CONTENIDO (CustomScrollView) ---
+        // --- CONSTRUCCIÓN DEL CONTENIDO ---
         final listContent =
             (tasks.isEmpty && !result.isLoading && _selectedCategoryIds.isEmpty)
             ? Center(
@@ -153,6 +159,7 @@ class _TaskListPageState extends State<TaskListPage> {
                           color: Colors.white.withOpacity(0.92),
                           borderRadius: BorderRadius.circular(18),
                         ),
+                        //caja de info que muestra el numero de tareas totales
                         child: Row(
                           children: [
                             Icon(
@@ -188,6 +195,7 @@ class _TaskListPageState extends State<TaskListPage> {
                                 as Map<String, dynamic>?;
                         final rawCategories =
                             (categoriesResponse?['items'] as List?) ?? [];
+                        //filtramos por categorias activas solo
                         final categories = rawCategories
                             .map(
                               (item) => Categories.fromJson(
