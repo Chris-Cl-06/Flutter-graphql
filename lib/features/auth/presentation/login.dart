@@ -12,13 +12,17 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   int selectedIndex = 0;
   bool showOption = false;
+
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: Colors.black,
+
       body: Container(
         height: double.infinity,
-        width: double.infinity,
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage('assets/icon-foreground.png'),
@@ -27,8 +31,8 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         alignment: Alignment.center,
         child: Container(
-          height: 400,
-          width: double.infinity,
+          height: screenHeight * 0.5,
+          width: screenWidth * 0.65,
           margin: const EdgeInsets.symmetric(horizontal: 30),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.white),
@@ -39,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(20),
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaY: 5, sigmaX: 5),
+
               child: Padding(
                 padding: const EdgeInsets.all(25),
                 child: Column(
@@ -82,8 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: TextUtil(
-                            text:
-                                "Remember Me ,                                                           FORGET PASSWORD",
+                            text: "Remember Me",
                             size: 12,
                             weight: true,
                           ),
