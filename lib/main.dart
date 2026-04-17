@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/features/auth/presentation/login.dart';
 import 'package:flutter_application_1/features/home/presentation/home_shell_page.dart';
 import 'package:flutter_application_1/core/graphql/graphql_client.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
@@ -26,24 +27,33 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Updated palette: slightly richer teal primary and softer backgrounds
     final colorScheme =
         ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0F766E),
+          seedColor: const Color(0xFF04635E),
           brightness: Brightness.light,
         ).copyWith(
-          primary: const Color(0xFF0F766E),
-          secondary: const Color(0xFFF59E0B),
-          surface: const Color(0xFFF6F8FC),
+          primary: const Color(0xFF04635E), // deeper teal
+          secondary: const Color(0xFFF59E0B), // amber accent (unchanged)
+          surface: const Color(0xFFFFFFFF),
+          background: const Color(0xFFF5F9FF),
+          outline: const Color(0xFF9FB3C8),
+          outlineVariant: const Color(0xFFE6EEF6),
         );
 
     return GraphQLProvider(
       client: client,
       child: MaterialApp(
+        initialRoute: '/login',
+        routes: {
+          '/login': (context) => const LoginScreen(),
+          '/home': (context) => const HomeShellPage(),
+        },
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: colorScheme,
-          scaffoldBackgroundColor: const Color(0xFFF2F5FB),
+          scaffoldBackgroundColor: const Color(0xFFF5F9FF),
           textTheme: GoogleFonts.manropeTextTheme(),
           appBarTheme: const AppBarTheme(
             backgroundColor: Colors.transparent,
@@ -80,10 +90,10 @@ class _MyAppState extends State<MyApp> {
             ),
           ),
           navigationBarTheme: NavigationBarThemeData(
-            backgroundColor: Colors.white,
-            indicatorColor: colorScheme.primary.withValues(alpha: 0.14),
+            backgroundColor: Colors.white.withOpacity(0.92),
+            indicatorColor: colorScheme.primary.withOpacity(0.14),
             elevation: 0,
-            height: 72,
+            height: 68,
             labelTextStyle: WidgetStateProperty.resolveWith((states) {
               final isSelected = states.contains(WidgetState.selected);
               return TextStyle(
@@ -93,7 +103,8 @@ class _MyAppState extends State<MyApp> {
             }),
           ),
         ),
-        home: const HomeShellPage(),
+        //home: const HomeShellPage(),
+        // home: const LoginScreen(),
       ),
     );
   }
