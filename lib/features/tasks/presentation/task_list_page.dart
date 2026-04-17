@@ -32,6 +32,9 @@ class _TaskListPageState extends State<TaskListPage> {
   static const int _limit = 4;
   int _offset = 0;
   final Set<String> _selectedCategoryIds = <String>{};
+  bool _activasState = false;
+
+  bool get _showCompletedOnly => _activasState;
 
   //easteregg
   void _onTareasTitleTap() {
@@ -78,8 +81,8 @@ class _TaskListPageState extends State<TaskListPage> {
       options: QueryOptions(
         document: gql(getTasksQuery),
         variables: {
-          'offset': _offset,
-          'limit': _limit,
+          'offset': _showCompletedOnly ? null : _offset,
+          'limit': _showCompletedOnly ? null : _limit,
           'categoryId': _selectedCategoryIds.isEmpty
               ? null
               : _selectedCategoryIds.toList(),
@@ -103,19 +106,42 @@ class _TaskListPageState extends State<TaskListPage> {
             .map((item) => Task.fromJson(item as Map<String, dynamic>))
             .where((item) => item.categoryActive != false)
             .toList();
+        final completedTasks = tasks.where((task) => task.completed).toList();
+
+        final displayedTotalCount = _showCompletedOnly
+          ? completedTasks.length
+          : totalCount;
+
+        final maxCompletedOffset = displayedTotalCount == 0
+          ? 0
+          : ((displayedTotalCount - 1) ~/ _limit) * _limit;
+        final effectiveOffset = _showCompletedOnly
+          ? _offset.clamp(0, maxCompletedOffset)
+          : _offset;
+
+        final completedPageEnd =
+          (effectiveOffset + _limit).clamp(0, completedTasks.length);
+        final displayedTasks = _showCompletedOnly
+          ? completedTasks.sublist(effectiveOffset, completedPageEnd)
+          : tasks;
 
         // --- LÓGICA DE PAGINACIÓN ---
-        final hasPreviousPage = pageInfo?['hasPreviousPage'] ?? false;
-        final hasNextPage = pageInfo?['hasNextPage'] ?? false;
-        final totalPages = ((totalCount + _limit - 1) ~/ _limit).clamp(
-          1,
-          999999,
-        );
-        final currentPage = (_offset ~/ _limit) + 1;
+        final hasPreviousPage = _showCompletedOnly
+          ? effectiveOffset > 0
+          : (pageInfo?['hasPreviousPage'] ?? false);
+        final hasNextPage = _showCompletedOnly
+          ? completedPageEnd < displayedTotalCount
+          : (pageInfo?['hasNextPage'] ?? false);
+        final totalPages = ((displayedTotalCount + _limit - 1) ~/ _limit)
+          .clamp(1, 999999);
+        final currentPage = (effectiveOffset ~/ _limit) + 1;
 
         // --- CONSTRUCCIÓN DEL CONTENIDO ---
         final listContent =
-            (tasks.isEmpty && !result.isLoading && _selectedCategoryIds.isEmpty)
+            (displayedTasks.isEmpty &&
+                !result.isLoading &&
+                _selectedCategoryIds.isEmpty &&
+                !_showCompletedOnly)
             ? Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -156,7 +182,7 @@ class _TaskListPageState extends State<TaskListPage> {
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.92),
+                          color: Colors.white.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         //caja de info que muestra el numero de tareas totales
@@ -169,9 +195,7 @@ class _TaskListPageState extends State<TaskListPage> {
                             const SizedBox(width: 10),
                             Expanded(
                               child: Text(
-                                _selectedCategoryIds.isEmpty
-                                    ? 'Mostrando ${tasks.length} de $totalCount tareas'
-                                    : 'Mostrando ${tasks.length} resultados filtrados',
+                                'Mostrando ${displayedTasks.length} de $displayedTotalCount tareas',
                                 style: Theme.of(context).textTheme.titleSmall,
                               ),
                             ),
@@ -220,6 +244,20 @@ class _TaskListPageState extends State<TaskListPage> {
                                     setState(() {
                                       _offset = 0;
                                       _selectedCategoryIds.clear();
+                                      _activasState = false;
+                                    });
+                                  },
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: FilterChip(
+                                  label: const Text('Completadas'),
+                                  selected: _activasState,
+                                  onSelected: (bool selected) {
+                                    setState(() {
+                                      _activasState = selected;
+                                      _offset = 0;
                                     });
                                   },
                                 ),
@@ -254,9 +292,9 @@ class _TaskListPageState extends State<TaskListPage> {
                   ),
 
                   // 4. Lista de Tareas o Mensaje de Vacío
-                  if (tasks.isEmpty &&
+                  if (displayedTasks.isEmpty &&
                       !result.isLoading &&
-                      _selectedCategoryIds.isNotEmpty)
+                      (_selectedCategoryIds.isNotEmpty || _showCompletedOnly))
                     const SliverToBoxAdapter(
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(16, 40, 16, 12),
@@ -265,13 +303,13 @@ class _TaskListPageState extends State<TaskListPage> {
                     )
                   else
                     SliverList.separated(
-                      itemCount: tasks.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemCount: displayedTasks.length,
+                      separatorBuilder: (_, index) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
-                        final task = tasks[index];
+                        final task = displayedTasks[index];
                         return TaskCard(
                           task: task,
-                          index: _offset + index,
+                          index: effectiveOffset + index,
                           onDelete: () => TaskFunctions.deleteTask(
                             context,
                             task.id,
@@ -292,7 +330,7 @@ class _TaskListPageState extends State<TaskListPage> {
                     ),
 
                   // 5. Paginación
-                  if (tasks.isNotEmpty)
+                  if (displayedTasks.isNotEmpty)
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 20),
@@ -302,7 +340,10 @@ class _TaskListPageState extends State<TaskListPage> {
                             IconButton.outlined(
                               icon: const Icon(Icons.chevron_left),
                               onPressed: hasPreviousPage
-                                  ? () => setState(() => _offset -= _limit)
+                                ? () => setState(() {
+                                  _offset = (effectiveOffset - _limit)
+                                    .clamp(0, maxCompletedOffset);
+                                })
                                   : null,
                             ),
                             const SizedBox(width: 16),
@@ -311,7 +352,16 @@ class _TaskListPageState extends State<TaskListPage> {
                             IconButton.outlined(
                               icon: const Icon(Icons.chevron_right),
                               onPressed: hasNextPage
-                                  ? () => setState(() => _offset += _limit)
+                                  ? () => setState(() {
+                                      final nextOffset =
+                                          effectiveOffset + _limit;
+                                      _offset = _showCompletedOnly
+                                          ? nextOffset.clamp(
+                                              0,
+                                              maxCompletedOffset,
+                                            )
+                                          : nextOffset;
+                                    })
                                   : null,
                             ),
                           ],
